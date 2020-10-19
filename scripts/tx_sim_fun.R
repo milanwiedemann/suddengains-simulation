@@ -206,7 +206,8 @@ sim_tx(
     sd_ym = 7,
     return = "wide",
     jiggle = F,
-    seed = 123, na_pct = .1
+    seed = 123, 
+    na_pct = .1
   )
 
 df_long_01_jf <-
