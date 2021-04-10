@@ -1,124 +1,309 @@
-#-------------------------
-# Define parameters - Linear Change
-#-------------------------
-sim_tx <-
-  function(n,
-           tp,
-           mean_b0,
-           sd_b0,
-           low_b0,
-           up_b0,
-           mean_yf,
-           sd_yf,
-           mu,
-           s,
-           mu_j,
-           s_j,
-           tm,
-           mean_ym,
-           sd_ym,
-           jiggle = TRUE,
-           na_pct = 0,
-           return = c("long", "wide"),
-           seed = 1234) {
+# LINEAR ---
+#  n <- 20
+#
+# # Number of timepoints
+# tp <- 20
+#
+# # Set b0
+# mean_b0 = 29.33
+# sd_b0 = 8.04
+# low_b0 = 15
+# up_b0 =63
+#
+# # Set Yf
+# mean_yf = 15.9
+# sd_yf = 11.9
+#
+# # Variation of slopes  #Autocorrelation within individual
+# mu = 0
+# s = 0.2
+#
+# # Jiggle for points around the line
+# mu_j = 0
+# s_j = 5
+#
+# # Medium point (Setting mean and sd at timepoint 8)
+# tm = 8
+# mean_ym = 20
+# sd_ym = 7
+
+
+# # Number of subjects
+# n <- 20
+# 
+# # Number of timepoints
+# tp <- 20
+# 
+# # Set b0
+# mean_b0 = 29.33
+# sd_b0 = 8.04
+# low_b0 = 15
+# up_b0 = 63
+# 
+# # Set Yf
+# mean_yf = 15.9
+# sd_yf = 11.9
+# 
+# # Variation of slopes  #Autocorrelation within individual
+# mu = 0
+# s = 0.2
+# 
+# # Jiggle for points around the line
+# mu_j = 0
+# s_j = 5
+# 
+# # Medium point (Setting mean and sd at timepoint 8)
+# tm = 8
+# mean_ym = 20
+# sd_ym = 7
+
+
+
+#' Simulate longitudinal data
+#'
+#' @param n Numeric, specifying the sample size
+#' @param tp Numeric, specifying the number of repeated measurements
+#' @param mean_b0 Numeric, specifying TODO
+#' @param sd_b0 Numeric, specifying TODO
+#' @param low_b0 Numeric, specifying TODO
+#' @param up_b0 Numeric, specifying TODO
+#' @param mean_yf Numeric, specifying TODO
+#' @param sd_yf Numeric, specifying TODO
+#' @param mu Numeric, specifying the TODO autocorrelation
+#' @param s Numeric, specifying the TODO autocorrelation
+#' @param mu_j Numeric, specifying the TODO jiggle
+#' @param s_j Numeric, specifying the TODO jiggle
+#' @param tm Numeric, specifying the TODO time point TODO 
+#' @param mean_ym Numeric, specifying TODO
+#' @param sd_ym Numeric, specifying TODO
+#' @param jiggle Logical, specifying whether to add jiggle (TRUE) or not (FALSE)
+#' @param na_pct Numeric, specifying percentage of missing data from 0 (no missing data) to 1 (all values are missing).
+#' @param sim_method String, specifying the underlying trajectories for simulating data
+#' @param return String, specifying whether to return a "long" (one row per time point per ID)
+#' or "wide" data set
+#' @param seed Numeric, specifying seed to allow replication of results
+#'
+#' @return
+#' @export
+#'
+#' @examples
+sim_tx <- function(n,
+                   tp,
+                   mean_b0,
+                   sd_b0,
+                   low_b0,
+                   up_b0,
+                   mean_yf,
+                   sd_yf,
+                   mu,
+                   s,
+                   mu_j,
+                   s_j,
+                   tm,
+                   mean_ym,
+                   sd_ym,
+                   jiggle = TRUE,
+                   na_pct = 0,
+                   sim_method = c("nochange", "linear", "pseudolog"),
+                   return = c("long", "wide"),
+                   seed = 1234) {
+  
     
+    # Check arguments of function
+    sim_method <- match.arg(sim_method)
     return <- match.arg(return)
     
-    #-------------------------
-    # Linear Change
-    #-------------------------
-    
-    #Set seed to replicate results - different for each trend so they do not start in the same point
+    # Set seed to allow replication of results
     set.seed(seed)
     
-    df1 <- NULL #Set empty dataset to start
-    for (j in 1:n) {
-      t <- NULL #t time x-axis
-      y <- NULL # y score y-axis
-      m <- NULL #slope
+    # Linear Change ----
+    if (sim_method == "linear") {
       
-      #For first value and first slope
-      b0 <-
-        rnorm(n = 1, mean = mean_b0, sd = sd_b0) #select random number for normal distribution with parameters b0
-      while (b0 < low_b0 |
-             b0 > up_b0) {
-        #Not allowing it to be lower than 15 or higher than 63
-        b0 <- rnorm(n = 1, mean = mean_b0, sd = sd_b0)
-      }
-      yf <-
-        rnorm(n = 1, mean = mean_yf, sd = sd_yf) #random number for distribution of yf to create slope
-      while (yf > b0) {
-        #Not allowing it to be higher than b0
-        yf <- rnorm(n = 1, mean = mean_yf, sd = sd_yf)
-      }
-      yf <- ifelse(yf < 0, 0, yf) #not allowing it to be lower than 0
-      m1 <- (yf - b0) / tp  #Set slope from b0 and Yf created before
+      # Set empty dataset to start
+      df1 <- NULL 
       
-      #Define first data points
-      t[1] = 1
-      y[1] = b0
-      m[1] = m1
-      t[2] = 2
-      y[2] = m1 + b0
-      m[2] = m1
-      
-      #Loop for timepoint 3 to 20
-      for (i in 3:tp) {
-        t[i] = i
-        m[i] <-
-          m[i - 1] + rnorm(1, mean = mu, sd = s) #Add variation to slope so it is not the same for all 20 datapoints
-        while (m[i] > 0) {
-          #Not allowing slope to be positive
-          m[i] <- m[i - 1] + rnorm(1, mean = mu, sd = s)
+      for (j in 1:n) {
+        
+        t <- NULL # t time x-axis
+        y <- NULL # y score y-axis
+        m <- NULL # slope
+        
+        # For first value and first slope
+        b0 <- rnorm(n = 1, mean = mean_b0, sd = sd_b0) # select random number for normal distribution with parameters b0
+        
+        while (b0 < low_b0 | b0 > up_b0) {
+          
+          # Not allowing it to be lower than 15 or higher than 63
+          b0 <- rnorm(n = 1, mean = mean_b0, sd = sd_b0)
+          
         }
         
-        y[i] <- m[i] + y[i - 1]  #calculate new y
-        yt <-
-          m[i] * (tp - (i - 1)) + y[i - 1] #calculate last value for that slope to see if it falls in distribution for yf
+        yf <- rnorm(n = 1, mean = mean_yf, sd = sd_yf) # random number for distribution of yf to create slope
         
-        while (yt < mean_yf - 1.5 * sd_yf |
-               yt > mean_yf + 1.5 * sd_yf |
-               yt < 0) {
-          #make sure yf fall in yf distribution
-          m[i] <- m[i - 1] + rnorm(1, mean = mu, sd = s)
+        while (yf > b0) {
+          # Not allowing it to be higher than b0
+          yf <- rnorm(n = 1, mean = mean_yf, sd = sd_yf)
+        }
+        
+        yf <- ifelse(yf < 0, 0, yf) # not allowing it to be lower than 0
+        m1 <- (yf - b0) / tp  # Set slope from b0 and Yf created before
+        
+        # Define first data points
+        t[1] <- 1
+        y[1] <- b0
+        m[1] <- m1
+        t[2] <- 2
+        y[2] <- m1 + b0
+        m[2] <- m1
+        
+        # Loop for timepoint 3 to 20
+        for (i in 3:tp) {
+          t[i] = i
+          
+          # Add variation to slope so it is not the same for all 20 datapoints
+          m[i] <- m[i - 1] + rnorm(1, mean = mu, sd = s) 
           
           while (m[i] > 0) {
+            
+            # Not allowing slope to be positive
             m[i] <- m[i - 1] + rnorm(1, mean = mu, sd = s)
+            
           }
           
-          y[i] <- m[i] + y[i - 1]
-          yt <- m[i] * (tp - (i - 1)) + y[i - 1]
+          # calculate new y
+          y[i] <- m[i] + y[i - 1]  
+          
+          # calculate last value for that slope to see if it falls in distribution for yf
+          yt <- m[i] * (tp - (i - 1)) + y[i - 1] 
+          
+          while (yt < mean_yf - 1.5 * sd_yf |
+                 yt > mean_yf + 1.5 * sd_yf |
+                 yt < 0) {
+            
+            # make sure yf fall in yf distribution
+            m[i] <- m[i - 1] + rnorm(1, mean = mu, sd = s)
+            
+            while (m[i] > 0) {
+              
+              m[i] <- m[i - 1] + rnorm(1, mean = mu, sd = s)
+              
+            }
+            
+            y[i] <- m[i] + y[i - 1]
+            
+            yt <- m[i] * (tp - (i - 1)) + y[i - 1]
+            
+          }
+          
         }
+        
+        # dataset with values creates for each id
+        ind <- as.data.frame(cbind(id = j, t, y)) 
+        
+        # Add jiggle
+        for (k in 1:nrow(ind)) {
+          
+          ind$new_y[k] <- ind$y[k] + rnorm(1, mean = mu_j, sd = s_j)
+          
+          while (ind$new_y[k] < 0) {
+            
+            ind$new_y[k] <- ind$y[k] + rnorm(1, mean = mu_j, sd = s_j)
+            
+          }
+        }
+        
+        while (ind$new_y[1] < low_b0 | ind$new_y[1] > up_b0) {
+          
+          ind$new_y[1] <- ind$y[1] + rnorm(1, mean = mu_j, sd = s_j)
+          
+        }
+        
+        # Put all ids together
+        df1 <- rbind(df1, ind) 
+        
+        # clean for next loop
+        # TODO 2021-04-10 MW: Check if this is needed
+        rm(b0, yf, m1, t, m, y, yt, ind) 
         
       }
       
-      ind <-
-        as.data.frame(cbind(id = j, t, y)) #dataset with values creates for each id
+      df_long <- tibble::as_tibble(df1)
+
+    }
+    
+    
+    if (sim_method == "nochange") {
       
-      #Add jiggle
-      for (k in 1:nrow(ind)) {
-        ind$new_y[k] <- ind$y[k] + rnorm(1, mean = mu_j, sd = s_j)
-        while (ind$new_y[k] < 0) {
-          ind$new_y[k] <- ind$y[k] + rnorm(1, mean = mu_j, sd = s_j)
+      df2 <- NULL  #Set empty dataset to start
+      
+      for (j in 1:n) {
+        t <- NULL
+        y <- NULL
+        m <- NULL
+        
+        #For first value
+        b0 <- rnorm(n = 1, mean = mean_b0, sd = sd_b0) #select random number for normal distribution with parameters b0
+        while (b0 < low_b0 |
+               b0 > up_b0) {
+          #Not allowing it to be lower than 15 or higher than 63
+          b0 <- rnorm(n = 1, mean = mean_b0, sd = sd_b0)
         }
-      }
-      while (ind$new_y[1] < low_b0 | ind$new_y[1] > up_b0) {
-        ind$new_y[1] <- ind$y[1] + rnorm(1, mean = mu_j, sd = s_j)
+        yf <-
+          rnorm(n = 1, mean = mean_b0, sd = sd_b0) #random number for distribution of b0 to create slope
+        yf <- ifelse(yf < 0, 0, yf) #not allowing it to be lower than 0
+        m1 <- (yf - b0) / tp  #Set slope from b0 and Yf created before
+        
+        #Define first data points
+        t[1] = 1
+        y[1] = b0
+        m[1] = m1
+        t[2] = 2
+        y[2] = m1 + b0
+        m[2] = m1
+        
+        #Loop for timepoint 3 to 20
+        for (i in 3:tp) {
+          t[i] = i
+          m[i] <- m[i - 1] + rnorm(1, mean = mu, sd = s) #Add variation to slope so it is not the same for all 20 datapoints
+          y[i] <- m[i] + y[i - 1] #calculate new y
+          yt <- m[i] * (tp - (i - 1)) + y[i - 1] #calculate last value for that slope to see if it falls in distribution for b0
+          
+          while (yt < b0 - 1.5 * sd_b0 |
+                 yt > b0 + 1.5 * sd_b0 |
+                 yt < 0) {
+            #make sure yf fall in b0 distribution
+            m[i] <- m[i - 1] + rnorm(1, mean = mu, sd = s)
+            y[i] <- m[i] + y[i - 1]
+            yt <- m[i] * (tp - (i - 1)) + y[i - 1]
+          }
+          
+        }
+        ind <- as.data.frame(cbind(id = j, t, y))  #dataset with values creates for each id
+        
+        #Add jiggle
+        for (k in 1:nrow(ind)) {
+          ind$new_y[k] <- ind$y[k] + rnorm(1, mean = mu_j, sd = s_j)
+          while (ind$new_y[k] < 0) {
+            ind$new_y[k] <- ind$y[k] + rnorm(1, mean = mu_j, sd = s_j)
+          }
+        }
+        while (ind$new_y[1] < low_b0 | ind$new_y[1] > up_b0) {
+          ind$new_y[1] <- ind$y[1] + rnorm(1, mean = mu_j, sd = s_j)
+        }
+        
+        df2 <- rbind(df2, ind) #Put all ids together
+        
+        rm(b0, yf, m1, t, m, y, yt, ind) #clean for next loop
       }
       
-      df1 <- rbind(df1, ind) #Put all ids together
+      df_long <- tibble::as_tibble(df2)
       
-      rm(b0, yf, m1, t, m, y, yt, ind) #clean for next loop
     }
     
     
     
-    # SELECT JIGGLE OR NOT
     
-    ## LONG
-    df_long <- tibble::as_tibble(df1)
-    #
-    
+    # Select variable (jiggle or no jiggle)
     if (jiggle == TRUE) {
       
       df_long <- dplyr::select(df_long, id, time = t, value = new_y)
@@ -129,25 +314,26 @@ sim_tx <-
       
     }
     
-    # add missing data
+    # Add missing data ----
     df_long <- dplyr::mutate(df_long,
                              random_num = runif(nrow(df_long)),
                              value = base::ifelse(random_num <= na_pct, NA, value)) 
     
     df_long <- select(df_long, -random_num)
-
-    # RETURN LONG OR
+    
+    # Return data ----
     if (return == "long") {
+      
       return(df_long)
       
     } else if (return == "wide") {
-      df_wide <-
-        tidyr::pivot_wider(
-          data = df_long,
-          names_from = time,
-          names_prefix = "t_",
-          values_from = value
-        )
+      
+      df_wide <- tidyr::pivot_wider(
+        data = df_long,
+        names_from = time,
+        names_prefix = "t_",
+        values_from = value
+      )
       
       return(df_wide)
       
@@ -157,7 +343,7 @@ sim_tx <-
     
   }
 
-# n <- 20
+#  n <- 20
 #
 # # Number of timepoints
 # tp <- 20
@@ -188,131 +374,13 @@ sim_tx <-
 library(tidyverse)
 
 
-sim_tx(
-    n = 100,
-    tp = 20,
-    mean_b0 = 29.33,
-    sd_b0 = 8.04,
-    low_b0 = 15,
-    up_b0 = 63,
-    mean_yf = 15.9,
-    sd_yf = 11.9,
-    mu = 0,
-    s = 0.2,
-    mu_j = 0,
-    s_j = 5,
-    tm = 8,
-    mean_ym = 20,
-    sd_ym = 7,
-    return = "wide",
-    jiggle = F,
-    seed = 123, 
-    na_pct = .1
-  )
 
-df_long_01_jf <-
-  sim_tx(
-    n = 100,
-    tp = 20,
-    mean_b0 = 29.33,
-    sd_b0 = 8.04,
-    low_b0 = 15,
-    up_b0 = 63,
-    mean_yf = 15.9,
-    sd_yf = 11.9,
-    mu = 0,
-    s = 0.2,
-    mu_j = 0,
-    s_j = 5,
-    tm = 8,
-    mean_ym = 20,
-    sd_ym = 7,
-    return = "long",
-    jiggle = F,
-    seed = 123
-  )
+# Verify descriptive stats ----
+skimr::skim(df_wide_01_jf)
 
-
-
-na_pct <- .9
-
-df_long_01_jf %>%
-  dplyr::mutate(
-    random_num = runif(nrow(.)),
-    value = base::ifelse(random_num <= na_pct, NA, value)) %>% View()
-
-
-  # ) %>%
-  # dplyr::select(-random_num) %>%
-  # tidyr::spread(vars, value)
-
-df_long_01_jf %>%
-  ggplot2::ggplot(aes(x = factor(time), y = value, group = id)) +
-  geom_line(alpha = .3, colour = "blue") +
-  geom_point(alpha = .3, size = .5) +
-  theme(legend.position = "none")
-
-
-df_long_01_jt <-
-  sim_tx(
-    n = 100,
-    tp = 20,
-    mean_b0 = 29.33,
-    sd_b0 = 8.04,
-    low_b0 = 15,
-    up_b0 = 63,
-    mean_yf = 15.9,
-    sd_yf = 11.9,
-    mu = 0,
-    s = 0.2,
-    mu_j = 0,
-    s_j = 3,
-    tm = 8,
-    mean_ym = 20,
-    sd_ym = 7,
-    return = "long",
-    jiggle = T,
-    seed = 123
-  )
-
-df_long_01_jt %>%
-  ggplot2::ggplot(aes(x = factor(time), y = value, group = id)) +
-  geom_line(alpha = .3, colour = "blue") +
-  geom_point(alpha = .3, size = .5) +
-  theme(legend.position = "none")
-
-
-
-#-----
-# Plot results
-
-plot(df1$t, df1$new_y, col = df1$id, pch = 16) #with jiggle
-plot(df1$t, df1$y, col = df1$id, pch = 16) #no jiggle
-
-#-----
-# Verify stats
-
-#Baseline
-base1 <- subset(df1, t == 1)
-
-mean(base1$new_y) #with jiggle
-mean(base1$y) #no jiggle
-sd(base1$new_y) #with jiggle
-sd(base1$y) #no jiggle
-
-#End
-end1 <- subset(df1, t == 20)
-
-mean(end1$new_y) #with jiggle
-mean(end1$y) #no jiggle
-sd(end1$new_y) #with jiggle
-sd(end1$y) #no jiggle
-
-
-#-----
 # Verify trend
-lme4::lmer(new_y ~ t + (1 | id), data = df1)@beta[2] # with jiggle
-lme4::lmer(y ~ t + (1 | id), data = df1)@beta[2] # with jiggle
+lme4::lmer(value ~ time + (1 | id), data = df_long_01_jf)@beta[2] # without jiggle
+lme4::lmer(value ~ time + (1 | id), data = df_long_01_jt)@beta[2] # with jiggle
 
 
 
@@ -360,8 +428,6 @@ s_j = 5
 tm = 8
 mean_ym = 20
 sd_ym = 7
-
-
 
 
 #-------------------------

@@ -1,14 +1,25 @@
+---
+output: github_document
+---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
 
 # suddengains-simulation
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of suddengains-simulation is to …
+The goal of suddengains-simulation is to ...
 
-``` r
+```{r eval=FALSE}
+
 df_long_01_jf <- sim_tx(n = 100, tp = 20, 
                         mean_b0 = 29.33, sd_b0 = 8.04, low_b0 = 15, up_b0 = 63, 
                         mean_yf = 15.9, sd_yf = 11.9, 
@@ -55,9 +66,9 @@ df_wide_01_jf <- sim_tx(n = 100, tp = 20,
                         seed = 123,  
                         na_pct = 0,
                         return = "wide")
-```
 
-``` r
+```
+```{r eval=FALSE}
 df_long_01_jt <- sim_tx(n = 100, tp = 20, 
                         mean_b0 = 29.33, sd_b0 = 8.04, low_b0 = 15, up_b0 = 63, 
                         mean_yf = 15.9, sd_yf = 11.9, 
@@ -74,4 +85,5 @@ df_long_01_jt %>%
   geom_line(alpha = .3, colour = "blue") +
   geom_point(alpha = .3, size = .5) +
   theme(legend.position = "none")
+
 ```
