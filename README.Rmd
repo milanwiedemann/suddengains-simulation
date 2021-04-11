@@ -51,7 +51,7 @@ library(patchwork)
 library(here)
 
 # Load simulation function ----
-source(here("scripts/tx_sim_fun.R"))
+source(here("app/tx_sim_fun.R"))
 
 ```
 
@@ -174,17 +174,17 @@ plot_lin_01_long_jf + plot_lin_01_long_jt
 ```{r warning=FALSE}
 
 df_log_01_long_jf <- sim_tx(n = 100, tp = 20, 
-                        mean_b0 = 29.33, sd_b0 = 8.04, 
-                        low_b0 = 15, up_b0 = 63, 
-                        mean_yf = 15.9, sd_yf = 11.9, 
-                        mu = 0, s = 0.2, 
-                        mu_j = 0, s_j = 1, 
-                        tm = 8, mean_ym = 20, sd_ym = 7, 
-                        sim_method = "pseudolog",
-                        jiggle = FALSE, 
-                        seed = 1213,  
-                        na_pct = .1,
-                        return = "long")
+                            mean_b0 = 29.33, sd_b0 = 8.04, 
+                            low_b0 = 15, up_b0 = 63, 
+                            mean_yf = 15.9, sd_yf = 11.9, 
+                            mu = 0, s = 0.2, 
+                            mu_j = 0, s_j = 1, 
+                            tm = 8, mean_ym = 20, sd_ym = 7, 
+                            sim_method = "pseudolog",
+                            jiggle = FALSE, 
+                            seed = 1213,  
+                            na_pct = .1,
+                            return = "long")
 
 plot_log_01_long_jf <- df_log_01_long_jf %>%
   ggplot(aes(x = factor(time), y = value, group = id)) +
@@ -195,17 +195,17 @@ plot_log_01_long_jf <- df_log_01_long_jf %>%
 
 
 df_log_01_long_jt <- sim_tx(n = 100, tp = 20, 
-                        mean_b0 = 29.33, sd_b0 = 8.04, 
-                        low_b0 = 15, up_b0 = 63, 
-                        mean_yf = 15.9, sd_yf = 11.9, 
-                        mu = 0, s = 0.2, 
-                        mu_j = 0, s_j = 1, 
-                        tm = 8, mean_ym = 20, sd_ym = 7, 
-                        sim_method = "pseudolog",
-                        jiggle = TRUE, 
-                        seed = 1213,  
-                        na_pct = .1,
-                        return = "long")
+                            mean_b0 = 29.33, sd_b0 = 8.04, 
+                            low_b0 = 15, up_b0 = 63, 
+                            mean_yf = 15.9, sd_yf = 11.9, 
+                            mu = 0, s = 0.2, 
+                            mu_j = 0, s_j = 5, 
+                            tm = 8, mean_ym = 20, sd_ym = 7, 
+                            sim_method = "pseudolog",
+                            jiggle = TRUE, 
+                            seed = 1213,  
+                            na_pct = .1,
+                            return = "long")
 
 plot_log_01_long_jt <- df_log_01_long_jt %>%
   ggplot(aes(x = factor(time), y = value, group = id)) +
@@ -222,25 +222,77 @@ plot_log_01_long_jf + plot_log_01_long_jt
 
 ```{r}
 
-df_no_01_long_jf <- df_no_01_long_jf %>% 
+# Transform all datasets into wide format (one row per individual, one variable per column)
+# Add information about simulation
+df_no_01_wide_jf <- df_no_01_long_jf %>% 
+  pivot_wider(id_cols = id, 
+              names_from = time, 
+              values_from = value, 
+              names_prefix = "bdi_t") %>% 
   mutate(source = "df_no_01_long_jf")
 
-df_no_01_long_jt <- df_no_01_long_jt %>% 
+df_no_01_wide_jt <- df_no_01_long_jt %>% 
+    pivot_wider(id_cols = id, 
+              names_from = time, 
+              values_from = value, 
+              names_prefix = "bdi_t") %>% 
   mutate(source = "df_no_01_long_jt")
 
 
-df_lin_01_long_jf <- df_lin_01_long_jf %>% 
+df_lin_01_wide_jf <- df_lin_01_long_jf %>% 
+    pivot_wider(id_cols = id, 
+              names_from = time, 
+              values_from = value, 
+              names_prefix = "bdi_t") %>% 
   mutate(source = "df_lin_01_long_jf")
 
-df_lin_01_long_jt <- df_lin_01_long_jt %>% 
+df_lin_01_wide_jt <- df_lin_01_long_jt %>% 
+    pivot_wider(id_cols = id, 
+              names_from = time, 
+              values_from = value, 
+              names_prefix = "bdi_t") %>% 
   mutate(source = "df_lin_01_long_jt")
 
 
-df_log_01_long_jf <- df_log_01_long_jf %>% 
+df_log_01_wide_jf <- df_log_01_long_jf %>% 
+    pivot_wider(id_cols = id, 
+              names_from = time, 
+              values_from = value, 
+              names_prefix = "bdi_t") %>% 
   mutate(source = "df_log_01_long_jf")
 
-df_log_01_long_jt <- df_log_01_long_jt %>% 
+df_log_01_wide_jt <- df_log_01_long_jt %>% 
+    pivot_wider(id_cols = id, 
+              names_from = time, 
+              values_from = value, 
+              names_prefix = "bdi_t") %>% 
   mutate(source = "df_log_01_long_jt")
+
+
+aaa <- df_no_01_wide_jf %>% 
+  dplyr::add_row(df_no_01_wide_jt) %>% 
+  dplyr::add_row(df_lin_01_wide_jf) %>% 
+  dplyr::add_row(df_lin_01_wide_jt) %>% 
+  dplyr::add_row(df_log_01_wide_jf) %>% 
+  dplyr::add_row(df_log_01_wide_jt) %>% 
+  dplyr::group_split(source)
+
+bbb <- map(aaa, possibly(suddengains::create_byperson, NA), 
+              sg_crit1_cutoff = 7, 
+              id_var_name = "id", 
+              sg_measure_name = "bdi",
+              sg_var_list = paste0("bdi_t", 1:20), 
+              tx_start_var_name = "bdi_t1", 
+              tx_end_var_name = "bdi_t20")
+
+
+df_log_01_wide_jt %>% 
+  suddengains::create_bysg(sg_crit1_cutoff = 2, 
+                               id_var_name = "id", 
+                               sg_var_list = paste0("bdi_t", 1:20), 
+                               sg_measure_name = "bdi",
+                               tx_start_var_name = "bdi_t1", 
+                               tx_end_var_name = "bdi_t20")
 
 ```
 

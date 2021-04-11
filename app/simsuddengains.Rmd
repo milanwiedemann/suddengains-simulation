@@ -1,0 +1,169 @@
+---
+title: "simsuddengains"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    source_code: embed
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(suddengains)
+library(tidyverse)
+library(datasets)
+library(reactable)
+source("tx_sim_fun.R")
+```
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+**Select parameters for simulation:**
+
+```{r}
+sliderInput("n_sample", 
+            label = "Sample size:", 
+            value = 100,
+            min = 1, 
+            max = 200)
+
+selectInput("n_timepoints", 
+            label = "Timepoints:",
+            choices = c(15, 20, 25), 
+            selected = 20)
+
+selectInput("sim_method", label = "Trajectory:",
+            choices = list("No change" = "nochange", 
+                           "Linear change" = "linear",
+                           "Pseudo-log" = "pseudolog"), 
+            selected = "Yes")
+
+selectInput("jiggle", label = "Jiggle:",
+            choices = list("Yes" = TRUE, 
+                           "No" = FALSE), 
+            selected = "Yes")
+```
+
+**Additional options:**
+
+```{r}
+
+
+sliderInput("na_pct", 
+            label = "Missing data %:", 
+            value = 0,
+            min = 0, 
+            max = 1)
+
+numericInput("set_seed", label = "Set seed:", 
+             value = 1213)
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Individual trajectories
+
+```{r}
+
+df_sim_tx <- reactive({
+  
+  sim_tx(n = input$n_sample, 
+         tp = as.numeric(input$n_timepoints), 
+         mean_b0 = 29.33, sd_b0 = 8.04, 
+         low_b0 = 15, up_b0 = 63, 
+         mean_yf = 15.9, sd_yf = 11.9, 
+         mu = 0, s = 0.2, 
+         mu_j = 0, s_j = 1, 
+         tm = 8, mean_ym = 20, sd_ym = 7, 
+         sim_method = input$sim_method,
+         jiggle = input$jiggle, 
+         seed = input$set_seed,  
+         na_pct = input$na_pct,
+         return = "long")
+  
+})
+
+```
+
+
+```{r}
+
+renderPlot({
+
+  df_sim_tx() %>%
+  ggplot(aes(x = factor(time), y = value, group = id)) +
+  geom_line(alpha = .3, colour = "blue") +
+  geom_point(alpha = .3, size = .5) +
+  labs(x = "Session", y = "BDI-II") +
+  theme(text = element_text(size = 16))
+  
+})
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+
+
+```{r}
+
+df_sim_tx_bysg <- reactive({
+  
+  df_sim_wide_tx <- df_sim_tx() %>% 
+    pivot_wider(id_cols = id, 
+                names_from = time, 
+                values_from = value, 
+                names_prefix = "bdi_t")
+  
+  df_sim_wide_tx <- df_sim_wide_tx %>% 
+  suddengains::create_bysg(sg_crit1_cutoff = 4, 
+                           id_var_name = "id", 
+                           sg_var_list = paste0("bdi_t", 1:input$n_timepoints), 
+                           sg_measure_name = "bdi",
+                           tx_start_var_name = "bdi_t1", 
+                           tx_end_var_name = paste0("bdi_t", input$n_timepoints))
+  
+  df_sim_wide_tx %>% 
+    select(id, id_sg, 
+           sg_crit123, 
+           sg_session_n, 
+           sg_freq_byperson, 
+           sg_bdi_2n,
+           sg_bdi_1n,
+           sg_bdi_n,
+           sg_bdi_n1,
+           sg_bdi_n2,
+           sg_bdi_n3,
+           sg_magnitude,
+           sg_bdi_tx_change,
+           sg_change_proportion,
+           sg_reversal_value,
+           sg_reversal) %>% 
+    mutate_at(c("sg_bdi_2n",
+                "sg_bdi_1n",
+                "sg_bdi_n",
+                "sg_bdi_n1",
+                "sg_bdi_n2",
+                "sg_bdi_n3",
+                "sg_magnitude",
+                "sg_bdi_tx_change",
+                "sg_change_proportion",
+                "sg_reversal_value"), round, 2)
+  
+})
+
+
+```
+
+```{r}
+reactable::renderReactable(
+  
+  reactable(df_sim_tx_bysg())
+  
+)
+
+```
+
