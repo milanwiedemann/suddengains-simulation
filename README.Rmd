@@ -13,6 +13,8 @@ knitr::opts_chunk$set(
 
 # suddengains-simulation
 
+An interactive demonstration with limited functionality is available here https://milanwiedemann.shinyapps.io/simsuddengains/.
+
 ## Overview
 
 The function `sim_tx()` simulates longitudinal data.
@@ -220,79 +222,94 @@ plot_log_01_long_jf + plot_log_01_long_jt
 
 # Identify sudden gains
 
+Just adding ideas here for now.
+
 ```{r}
 
 # Transform all datasets into wide format (one row per individual, one variable per column)
 # Add information about simulation
-df_no_01_wide_jf <- df_no_01_long_jf %>% 
-  pivot_wider(id_cols = id, 
-              names_from = time, 
-              values_from = value, 
-              names_prefix = "bdi_t") %>% 
-  mutate(source = "df_no_01_long_jf")
-
-df_no_01_wide_jt <- df_no_01_long_jt %>% 
-    pivot_wider(id_cols = id, 
-              names_from = time, 
-              values_from = value, 
-              names_prefix = "bdi_t") %>% 
-  mutate(source = "df_no_01_long_jt")
-
-
-df_lin_01_wide_jf <- df_lin_01_long_jf %>% 
-    pivot_wider(id_cols = id, 
-              names_from = time, 
-              values_from = value, 
-              names_prefix = "bdi_t") %>% 
-  mutate(source = "df_lin_01_long_jf")
-
-df_lin_01_wide_jt <- df_lin_01_long_jt %>% 
-    pivot_wider(id_cols = id, 
-              names_from = time, 
-              values_from = value, 
-              names_prefix = "bdi_t") %>% 
-  mutate(source = "df_lin_01_long_jt")
-
-
-df_log_01_wide_jf <- df_log_01_long_jf %>% 
-    pivot_wider(id_cols = id, 
-              names_from = time, 
-              values_from = value, 
-              names_prefix = "bdi_t") %>% 
-  mutate(source = "df_log_01_long_jf")
-
-df_log_01_wide_jt <- df_log_01_long_jt %>% 
-    pivot_wider(id_cols = id, 
-              names_from = time, 
-              values_from = value, 
-              names_prefix = "bdi_t") %>% 
-  mutate(source = "df_log_01_long_jt")
-
-
-aaa <- df_no_01_wide_jf %>% 
-  dplyr::add_row(df_no_01_wide_jt) %>% 
-  dplyr::add_row(df_lin_01_wide_jf) %>% 
-  dplyr::add_row(df_lin_01_wide_jt) %>% 
-  dplyr::add_row(df_log_01_wide_jf) %>% 
-  dplyr::add_row(df_log_01_wide_jt) %>% 
-  dplyr::group_split(source)
-
-bbb <- map(aaa, possibly(suddengains::create_byperson, NA), 
-              sg_crit1_cutoff = 7, 
-              id_var_name = "id", 
-              sg_measure_name = "bdi",
-              sg_var_list = paste0("bdi_t", 1:20), 
-              tx_start_var_name = "bdi_t1", 
-              tx_end_var_name = "bdi_t20")
-
-
-df_log_01_wide_jt %>% 
-  suddengains::create_bysg(sg_crit1_cutoff = 2, 
-                               id_var_name = "id", 
-                               sg_var_list = paste0("bdi_t", 1:20), 
-                               sg_measure_name = "bdi",
-                               tx_start_var_name = "bdi_t1", 
-                               tx_end_var_name = "bdi_t20")
-
+# df_no_01_wide_jf <- df_no_01_long_jf %>% 
+#   pivot_wider(id_cols = id, 
+#               names_from = time, 
+#               values_from = value, 
+#               names_prefix = "bdi_t") %>% 
+#   mutate(source = "df_no_01_long_jf")
+# 
+# df_no_01_wide_jt <- df_no_01_long_jt %>% 
+#     pivot_wider(id_cols = id, 
+#               names_from = time, 
+#               values_from = value, 
+#               names_prefix = "bdi_t") %>% 
+#   mutate(source = "df_no_01_long_jt")
+# 
+# 
+# df_lin_01_wide_jf <- df_lin_01_long_jf %>% 
+#     pivot_wider(id_cols = id, 
+#               names_from = time, 
+#               values_from = value, 
+#               names_prefix = "bdi_t") %>% 
+#   mutate(source = "df_lin_01_long_jf")
+# 
+# df_lin_01_wide_jt <- df_lin_01_long_jt %>% 
+#     pivot_wider(id_cols = id, 
+#               names_from = time, 
+#               values_from = value, 
+#               names_prefix = "bdi_t") %>% 
+#   mutate(source = "df_lin_01_long_jt")
+# 
+# 
+# df_log_01_wide_jf <- df_log_01_long_jf %>% 
+#     pivot_wider(id_cols = id, 
+#               names_from = time, 
+#               values_from = value, 
+#               names_prefix = "bdi_t") %>% 
+#   mutate(source = "df_log_01_long_jf")
+# 
+# df_log_01_wide_jt <- df_log_01_long_jt %>% 
+#     pivot_wider(id_cols = id, 
+#               names_from = time, 
+#               values_from = value, 
+#               names_prefix = "bdi_t") %>% 
+#   mutate(source = "df_log_01_long_jt")
+# 
+# 
+# aaa <- df_no_01_wide_jf %>% 
+#   dplyr::add_row(df_no_01_wide_jt) %>% 
+#   dplyr::add_row(df_lin_01_wide_jf) %>% 
+#   dplyr::add_row(df_lin_01_wide_jt) %>% 
+#   dplyr::add_row(df_log_01_wide_jf) %>% 
+#   dplyr::add_row(df_log_01_wide_jt) %>% 
+#   dplyr::group_split(source)
+# 
+# bbb <- map(aaa, possibly(suddengains::create_byperson, NA), 
+#               sg_crit1_cutoff = 7, 
+#               id_var_name = "id", 
+#               sg_measure_name = "bdi",
+#               sg_var_list = paste0("bdi_t", 1:20), 
+#               tx_start_var_name = "bdi_t1", 
+#               tx_end_var_name = "bdi_t20")
+# 
+# 
+# a <- try(suddengains::create_byperson(data = df_log_01_wide_jt,
+#                                sg_crit1_cutoff = 5, 
+#                                id_var_name = "id", 
+#                                sg_var_list = paste0("bdi_t", 1:20), 
+#                                sg_measure_name = "bdi",
+#                                tx_start_var_name = "bdi_t1", 
+#                                tx_end_var_name = "bdi_t20"))
+# 
+# 
+# plota <- a %>% 
+#   select(id, id_sg, sg_crit123, all_of(paste0("bdi_t", 1:20))) %>% 
+#   pivot_longer(cols = all_of(paste0("bdi_t", 1:20)), names_to = "time") %>% 
+#   mutate(sg_crit123 = factor(sg_crit123, levels = c(0,1), labels = c("No", "Yes")),
+#          time = factor(str_extract(time, "\\d+"), levels = c(1:20))) %>%
+#   ggplot(aes(x = factor(time), y = value, group = id, colour = sg_crit123, shape = sg_crit123)) +
+#   geom_line(alpha = .6) +
+#   geom_point(alpha = .6, size = .5) +
+#   labs(x = "Session", y = "BDI-II", colour = "Sudden gain", shape = "Sudden gain") +
+#   ggplot2::scale_color_viridis_d(end = .7)
+# 
+# plotly::ggplotly(plota)
 ```
 

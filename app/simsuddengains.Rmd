@@ -16,7 +16,7 @@ library(reactable)
 source("tx_sim_fun.R")
 ```
 
-Column {.sidebar}
+Column {.sidebar .tabset}
 -----------------------------------------------------------------------
 
 **Select parameters for simulation:**
@@ -37,27 +37,79 @@ selectInput("sim_method", label = "Trajectory:",
             choices = list("No change" = "nochange", 
                            "Linear change" = "linear",
                            "Pseudo-log" = "pseudolog"), 
-            selected = "Yes")
+            selected = "linear")
 
-selectInput("jiggle", label = "Jiggle:",
-            choices = list("Yes" = TRUE, 
-                           "No" = FALSE), 
-            selected = "Yes")
-```
+sliderInput("mean_b0", 
+            label = "Start of treatment (M):", 
+            value = 29.33,
+            min = 10, 
+            max = 50)
 
-**Additional options:**
+sliderInput("sd_b0", 
+            label = "Start of treatment (SD):", 
+            value = 8.04,
+            min = 1, 
+            max = 20)
 
-```{r}
+sliderInput("mean_yf", 
+            label = "End of treatment (M):", 
+            value = 15.9,
+            min = 10, 
+            max = 50)
 
+sliderInput("sd_yf", 
+            label = "End of treatment (SD):", 
+            value = 11.9,
+            min = 1, 
+            max = 20)
 
 sliderInput("na_pct", 
-            label = "Missing data %:", 
+            label = "Missing data percentage:", 
             value = 0,
             min = 0, 
-            max = 1)
+            max = 100)
 
 numericInput("set_seed", label = "Set seed:", 
              value = 1213)
+```
+
+**Jiggle options:**
+
+```{r}
+selectInput("jiggle", label = "Add jiggle:",
+            choices = list("Yes" = TRUE, 
+                           "No" = FALSE), 
+            selected = "Yes")
+
+# sliderInput("mu_j", 
+#             label = "Mean:", 
+#             value = 0,
+#             min = 0, 
+#             max = 10)
+
+sliderInput("s_j", 
+            label = "Standard deviation:", 
+            value = 2,
+            min = .1, 
+            max = 5)
+```
+
+**Sudden gains criteria:**
+
+```{r}
+
+sliderInput("sg_crit1_cutoff", 
+            label = "Criterion 1 cutoff:", 
+            min = 1, 
+            max = 15,
+            value = 7)
+
+sliderInput("sg_crit2_pct", 
+            label = "Criterion 2 percentage:", 
+            min = 0, 
+            max = 100,
+            value = 25)
+
 ```
 
 Row
@@ -71,16 +123,30 @@ df_sim_tx <- reactive({
   
   sim_tx(n = input$n_sample, 
          tp = as.numeric(input$n_timepoints), 
-         mean_b0 = 29.33, sd_b0 = 8.04, 
-         low_b0 = 15, up_b0 = 63, 
-         mean_yf = 15.9, sd_yf = 11.9, 
-         mu = 0, s = 0.2, 
-         mu_j = 0, s_j = 1, 
-         tm = 8, mean_ym = 20, sd_ym = 7, 
+         
+         mean_b0 = input$mean_b0, 
+         sd_b0 = input$sd_b0, 
+         
+         low_b0 = 15, 
+         up_b0 = 63, 
+         
+         mean_yf = input$mean_yf, 
+         sd_yf = input$sd_yf, 
+         
+         mu = 0, 
+         s = 0.2, 
+         
+         mu_j = 0, 
+         s_j = input$s_j, 
+         
+         tm = 8, 
+         mean_ym = 20, 
+         sd_ym = 7, 
+         
          sim_method = input$sim_method,
          jiggle = input$jiggle, 
          seed = input$set_seed,  
-         na_pct = input$na_pct,
+         na_pct = (input$na_pct / 100),
          return = "long")
   
 })
@@ -118,40 +184,57 @@ df_sim_tx_bysg <- reactive({
                 values_from = value, 
                 names_prefix = "bdi_t")
   
-  df_sim_wide_tx <- df_sim_wide_tx %>% 
-  suddengains::create_bysg(sg_crit1_cutoff = 4, 
+  df_sim_wide_tx <- suddengains::create_bysg(data = df_sim_wide_tx,
+                           sg_crit1_cutoff = input$sg_crit1_cutoff, 
+                           sg_crit2_pct = (input$sg_crit2_pct / 100),
                            id_var_name = "id", 
                            sg_var_list = paste0("bdi_t", 1:input$n_timepoints), 
                            sg_measure_name = "bdi",
                            tx_start_var_name = "bdi_t1", 
                            tx_end_var_name = paste0("bdi_t", input$n_timepoints))
   
-  df_sim_wide_tx %>% 
+  if ("tbl_df" %in% class(df_sim_wide_tx)) {
+    
+     df_return <-  df_sim_wide_tx %>% 
     select(id, id_sg, 
-           sg_crit123, 
-           sg_session_n, 
-           sg_freq_byperson, 
-           sg_bdi_2n,
-           sg_bdi_1n,
-           sg_bdi_n,
-           sg_bdi_n1,
-           sg_bdi_n2,
-           sg_bdi_n3,
+           # sg_crit123, 
+           session_n = sg_session_n, 
+           freq_byperson = sg_freq_byperson, 
+           `2n` = sg_bdi_2n,
+           `1n` = sg_bdi_1n,
+           `n` = sg_bdi_n,
+           `n1` = sg_bdi_n1,
+           `n2` = sg_bdi_n2,
+           `n3` = sg_bdi_n3,
            sg_magnitude,
-           sg_bdi_tx_change,
-           sg_change_proportion,
-           sg_reversal_value,
+           tx_change = sg_bdi_tx_change,
+           # sg_change_proportion,
+           sg_reversal_val = sg_reversal_value,
            sg_reversal) %>% 
-    mutate_at(c("sg_bdi_2n",
-                "sg_bdi_1n",
-                "sg_bdi_n",
-                "sg_bdi_n1",
-                "sg_bdi_n2",
-                "sg_bdi_n3",
+    mutate_at(c("2n",
+                "1n",
+                "n",
+                "n1",
+                "n2",
+                "n3",
                 "sg_magnitude",
-                "sg_bdi_tx_change",
-                "sg_change_proportion",
-                "sg_reversal_value"), round, 2)
+                "tx_change",
+                # "sg_change_proportion",
+                "sg_reversal_val"), round, 0)
+    
+  } 
+  
+  if  ("try_error" %in% class(df_sim_wide_tx)) {
+    
+   df_return <-  tibble::tribble(~id)
+    
+    
+    
+  }
+  
+  
+  return(df_return)
+
   
 })
 
@@ -161,9 +244,29 @@ df_sim_tx_bysg <- reactive({
 ```{r}
 reactable::renderReactable(
   
-  reactable(df_sim_tx_bysg())
-  
-)
+  reactable(df_sim_tx_bysg(),
+            showPagination = TRUE,
+            bordered = TRUE,
+            wrap = FALSE,
+            columns = list(
+              id = colDef(minWidth = 50),   # 50% width, 200px minimum
+              id_sg = colDef(minWidth = 100),   # 25% width, 100px minimum
+              freq_byperson = colDef(minWidth = 150),
+              session_n = colDef(minWidth = 100),
+              `2n` = colDef(minWidth = 100),
+              `1n` = colDef(minWidth = 100),
+              `n` = colDef(minWidth = 100),
+              `n1` = colDef(minWidth = 100),
+              `n2` = colDef(minWidth = 100),
+              `n3` = colDef(minWidth = 100),
+              sg_magnitude = colDef(minWidth = 150),
+              tx_change = colDef(minWidth = 100),
+              sg_reversal_val = colDef(minWidth = 150),
+              sg_reversal = colDef(minWidth = 100)
+            )
+            )
+  )
+
 
 ```
 

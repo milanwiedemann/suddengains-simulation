@@ -5,8 +5,8 @@ account: milanwiedemann
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3943229
-bundleId: 4457003
+bundleId: 4458308
 url: https://milanwiedemann.shinyapps.io/simsuddengains/
-when: 1618138452.69963
+when: 1618173496.914
 asMultiple: FALSE
 asStatic: FALSE
